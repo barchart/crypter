@@ -11,9 +11,9 @@ setup(name='crypter',
 	author='Jeremy Jongsma',
 	author_email='jeremy@barchart.com',
 	url='http://github.com/barchart',
-	version='1.0',
+	version='1.0.1',
 	packages=['crypter'],
-	scripts=['bin/crypter'],
+	scripts=['bin/crypter', 'bin/crypter-client'],
 	data_files=[
 		('/etc/crypter', ['etc/crypter.cfg'])
 	],
