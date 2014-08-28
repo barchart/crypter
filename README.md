@@ -6,6 +6,12 @@ values on request. This allows sensitive configuration values (i.e. credentials)
 to be encrypted in a docker container and decrypted at runtime by the container
 host.
 
+To install crypter from PyPI, just run:
+
+```
+pip install crypter
+```
+
 An RSA private key and certificate for encryption can be generated with the
 following OpenSSL command:
 
