@@ -26,10 +26,19 @@ create unix sockets in:
 crypter -d /var/run/crypter --key /path/to/key.pem --cert /path/to/cert.pem
 ```
 
-This creates two unix domain sockets: `/var/run/crypter/encrypt` and `/var/run/crypter/decrypt`
-that clients can connect to and request encryption or decryption of values. Once
-connected, to encrypt a value the client can connect to the `encrypt` socket and
-send the value to encrypt followed by two newlines:
+You can also specify default configuration values in `/etc/crypter/crypter.cfg`:
+
+```
+directory=/var/run/crypter
+key=/path/to/key.pem
+cert=/path/to/cert.pem
+```
+
+The daemon creates two unix domain sockets: `/var/run/crypter/encrypt` and
+`/var/run/crypter/decrypt` that clients can connect to and request encryption
+or decryption of values. Once connected, to encrypt a value the client can
+connect to the `encrypt` socket and send the value to encrypt followed by two
+newlines:
 
 ```
 value-to-encrypt\n
