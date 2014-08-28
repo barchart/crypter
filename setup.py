@@ -1,7 +1,7 @@
 from distutils.core import setup
 
-setup(name='barchart-crypter',
-	description='Encrypt/decrypt daemon that listens on local unix sockets',
+setup(name='crypter',
+	description='Encryption daemon that listens on unix domain sockets',
 	long_description="""
 	Encryption/decryption daemon that handles requests via unix domain sockets. The daemon
 	can be run on a container host, and trusted Docker containers can mount the socket
