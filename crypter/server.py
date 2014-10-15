@@ -17,9 +17,15 @@ class CryptPipeServer(object):
 
 		if certfile is not None:
 			self.cert = RSA.importKey(self.extract_pubkey(open(certfile).read()))
+		else:
+			self.cert = None
+
+		print self.cert
 
 		if keyfile is not None:
 			self.key = RSA.importKey(open(keyfile))
+		else:
+			self.key = None
 
 		self.decpipe = None
 		self.decrypter = None

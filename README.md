@@ -6,11 +6,15 @@ values on request. This allows sensitive configuration values (i.e. credentials)
 to be encrypted in a docker container and decrypted at runtime by the container
 host.
 
-To install crypter from PyPI, just run:
+To install crypter on Ubuntu:
 
 ```
+apt-get install openssl
 pip install crypter
 ```
+
+Due to the current messy state of Python encryption libraries, crypter depends
+on a local OpenSSL binary for data encryption.
 
 An RSA private key and certificate for encryption can be generated with the
 following OpenSSL command:
@@ -21,7 +25,7 @@ openssl req -x509 -newkey rsa:2048 -keyout key.pem -out cert.pem -days XXX -node
 
 Keep your private key in a safe place, and distribute it to your container hosts
 when they are built. We use puppetmaster to store the key locally and copy it to
-Docker host machines during image building.
+Docker host nodes during image building.
 
 #### Running the daemon
 
@@ -51,47 +55,77 @@ value-to-encrypt\n
 \n
 ```
 
-The daemon will respond with the encrypted value in Base64 encoding, followed by
-two newlines:
+Note that the value to encrypt cannot contain two consecutive newlines.
+If you need to encrypt larger chunks of data that may contain this sequence
+(such as a file) you should Base64-encode the data first.
+
+The daemon will respond with the encrypted value as a PEM-encoded PKCS#7
+message, followed by two newlines:
 
 ```
-IZctKxaGojf3kQafhTwiWEeLsbizeePcdz/rFP8PFUXXKO5PrgzYHz5QKIPjjrFIR/6y1ATgXsa8
-ZMvAZLNR4aEIVU2PmdSMGNf8OA+7xfzfFkuS4jVJjB7AcfJtKl1Va121uel4CizNENrCSDtSB/Dr
-yV3NY6Ya/Qkkg9C1/w86MFi61M/3F8K5ifPtQmGvGNgGZ4oW6MqLda/HG14RGXGIkwEXAyfyprEc
-Yd4nQgn27wyUTFfCCUEv3JIHg43Z3SAjC++QyQPrpaGvqJ8MtOjdO23kPUzMra+AMizXM5D0YwQ/
-hGaCjTvrtFJi94w/7FeNcFzzD+WjtueSvDyCoQ==\n
-\n
+-----BEGIN PKCS7-----
+MIIBeQYJKoZIhvcNAQcDoIIBajCCAWYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJ
+KoZIhvcNAQEBBQAEggEAKvgvyDUB1tDvU55foX2e5zK7cMBsxFXc1Mvle+3cmz+m
+Eysq1TljQ5Zg1iuJFzprP3WtEcTgywCn1DRgyasu2XAD0h9EZrcm99uU4djBUGMI
+hhPW+EAOdU9rdono/7q+Jqp0mpBXUc2nVjS9njjnXpHNRmHPHuX/yx3OMKhjFtDm
+2PQofTZfRtFS/Q6cE/d930rRhV31GeN1S8my8CFgAO1EEPetVCr2hm1natGK3LYd
+af+xhzLc+QrsT13Hx0pr5j7qYlfPlFR5HlDSyOs/oxvQ58WJAG1jKlGsjAAD24V0
+Q7bfC60Ns7EYqGOAbL50/3XGcbBjj+AUtz5sYUwQHzA8BgkqhkiG9w0BBwEwHQYJ
+YIZIAWUDBAEqBBAVCm6GhgsWvSPIKub28YdwgBDo0j7xAbBXCdsiEA7iq9wP
+-----END PKCS7-----
+
 ```
 
 To decrypt, simply reverse the process - connect to the `decrypt` socket and
-send the Base64-encoded encrypted value followed by two newlines.
+send the encrypted value returned above (boundary lines optional) followed
+by two newlines. Decrypting will not be supported if the private key is not
+available.
+
+Due to the basic nature of the protocol, subsequent encrypt/decrypt requests
+over a single connection should only be sent after the previous response is
+received, or results will be undefined.
+
+##### Technical Note
+
+Behind the scenes, data is encrypted by OpenSSL via the following commands
+(data is piped via STDIN):
+
+```
+openssl smime -encrypt -outform pem -aes256 &gt;PUBKEY&lt;
+```
+
+```
+openssl smime -decrypt -inform pem -inkey &gt;PRIVKEY&lt;
+```
 
 #### Using the CLI client
 
 A command line client is provided for use within the container that
-provides a simple way to handle encryption and decryption in shell scripts:
+provides a simple way to handle configuration decryption in shell scripts:
 
 ```
 crypter-client -d /var/run/crypter decrypt \
-   "IZctKxaGojf3kQafhTwiWEeLsbizeePcdz/rFP8PFUXXKO5PrgzYHz5QKIPjjrFIR/6y1ATgXsa8
-   ZMvAZLNR4aEIVU2PmdSMGNf8OA+7xfzfFkuS4jVJjB7AcfJtKl1Va121uel4CizNENrCSDtSB/Dr
-   yV3NY6Ya/Qkkg9C1/w86MFi61M/3F8K5ifPtQmGvGNgGZ4oW6MqLda/HG14RGXGIkwEXAyfyprEc
-   Yd4nQgn27wyUTFfCCUEv3JIHg43Z3SAjC++QyQPrpaGvqJ8MtOjdO23kPUzMra+AMizXM5D0YwQ/
-   hGaCjTvrtFJi94w/7FeNcFzzD+WjtueSvDyCoQ=="
+	"MIIBeQYJKoZIhvcNAQcDoIIBajCCAWYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJ
+	KoZIhvcNAQEBBQAEggEAKvgvyDUB1tDvU55foX2e5zK7cMBsxFXc1Mvle+3cmz+m
+	Eysq1TljQ5Zg1iuJFzprP3WtEcTgywCn1DRgyasu2XAD0h9EZrcm99uU4djBUGMI
+	hhPW+EAOdU9rdono/7q+Jqp0mpBXUc2nVjS9njjnXpHNRmHPHuX/yx3OMKhjFtDm
+	2PQofTZfRtFS/Q6cE/d930rRhV31GeN1S8my8CFgAO1EEPetVCr2hm1natGK3LYd
+	af+xhzLc+QrsT13Hx0pr5j7qYlfPlFR5HlDSyOs/oxvQ58WJAG1jKlGsjAAD24V0
+	Q7bfC60Ns7EYqGOAbL50/3XGcbBjj+AUtz5sYUwQHzA8BgkqhkiG9w0BBwEwHQYJ
+	YIZIAWUDBAEqBBAVCm6GhgsWvSPIKub28YdwgBDo0j7xAbBXCdsiEA7iq9wP"
 ```
 
 ### Docker integration
 
-To use crypter in Docker, map the host's socket directory to a volume inside
-the Docker container, using a run command like:
+To use crypter inside Docker, deploy your keys to the Docker host, start
+crypter, and map the host's socket directory to a volume inside the Docker
+container.
 
 ```
 $ docker run -d -v /var/run/crypter:/var/run/crypter ubuntu
 ```
 
 Once running, you will see the `encrypt` and `decrypt` sockets exposed inside
-the container at `/var/run/crypter`. You can now decrypt values without the
-container having any knowledge of your private key.
-
-This allows you to run both trusted and untrusted containers on your host,
-and only granting trusted containers access to decryption services.
+the container at `/var/run/crypter`. You can now decrypt values (i.e.
+credentials in app configuration) without exposing your private key to the
+container.
