@@ -104,15 +104,14 @@ A command line client is provided for use within the container that
 provides a simple way to handle configuration decryption in shell scripts:
 
 ```
-crypter-client -d /var/run/crypter decrypt \
-	"MIIBeQYJKoZIhvcNAQcDoIIBajCCAWYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJ
+echo "MIIBeQYJKoZIhvcNAQcDoIIBajCCAWYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJ
 	KoZIhvcNAQEBBQAEggEAKvgvyDUB1tDvU55foX2e5zK7cMBsxFXc1Mvle+3cmz+m
 	Eysq1TljQ5Zg1iuJFzprP3WtEcTgywCn1DRgyasu2XAD0h9EZrcm99uU4djBUGMI
 	hhPW+EAOdU9rdono/7q+Jqp0mpBXUc2nVjS9njjnXpHNRmHPHuX/yx3OMKhjFtDm
 	2PQofTZfRtFS/Q6cE/d930rRhV31GeN1S8my8CFgAO1EEPetVCr2hm1natGK3LYd
 	af+xhzLc+QrsT13Hx0pr5j7qYlfPlFR5HlDSyOs/oxvQ58WJAG1jKlGsjAAD24V0
 	Q7bfC60Ns7EYqGOAbL50/3XGcbBjj+AUtz5sYUwQHzA8BgkqhkiG9w0BBwEwHQYJ
-	YIZIAWUDBAEqBBAVCm6GhgsWvSPIKub28YdwgBDo0j7xAbBXCdsiEA7iq9wP"
+	YIZIAWUDBAEqBBAVCm6GhgsWvSPIKub28YdwgBDo0j7xAbBXCdsiEA7iq9wP" | crypter-client decrypt
 ```
 
 ### Docker integration
