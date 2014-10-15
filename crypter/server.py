@@ -1,13 +1,10 @@
 #!/usr/bin/python
-from Crypto.Util.asn1 import DerSequence
-from Crypto.PublicKey import RSA
 from threading import Thread
 import select
 import logging
 import socket
-import ssl
 import os
-import base64
+import subprocess
 
 class CryptPipeServer(object):
 
@@ -15,17 +12,8 @@ class CryptPipeServer(object):
 
 		self.log = logging.getLogger(__name__)
 
-		if certfile is not None:
-			self.cert = RSA.importKey(self.extract_pubkey(open(certfile).read()))
-		else:
-			self.cert = None
-
-		print self.cert
-
-		if keyfile is not None:
-			self.key = RSA.importKey(open(keyfile))
-		else:
-			self.key = None
+		self.certfile = certfile
+		self.keyfile = keyfile
 
 		self.decpipe = None
 		self.decrypter = None
@@ -33,31 +21,35 @@ class CryptPipeServer(object):
 		self.encpipe = None
 		self.encrypter = None
 
-	def extract_pubkey(self, x509):
-
-		der = ssl.PEM_cert_to_DER_cert(x509)
-
-		# Extract subjectPublicKeyInfo field from X.509 certificate (see RFC3280)
-		cert = DerSequence()
-		cert.decode(der)
-		tbsCertificate = DerSequence()
-		tbsCertificate.decode(cert[0])
-
-		return tbsCertificate[6]
-
 	def encrypt(self, value):
 
-		if self.cert is None:
+		if self.certfile is None:
 			raise Exception('Public key not available, encrypt not supported')
+		
+		p = subprocess.Popen(
+			['openssl', 'smime', '-encrypt', '-outform', 'pem', '-aes256', self.certfile],
+			stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 
-		return base64.encodestring(self.cert.encrypt(value, 0)[0]).strip()
+		(out, err) = p.communicate(value)
+
+		return out
 
 	def decrypt(self, value):
 
-		if self.key is None:
+		if self.keyfile is None:
 			raise Exception('Private key not available, decrypt not supported')
 
-		return self.key.decrypt(base64.decodestring("%s\n" % value))
+		# Lenient decryption format
+		if value[:5] != '-----':
+			value = '%s\n%s\n%s' % ('-----BEGIN PKCS7-----', value, '-----END PKCS7-----')
+
+		p = subprocess.Popen(
+			['openssl', 'smime', '-decrypt', '-inform', 'pem', '-inkey', self.keyfile],
+			stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+
+		(out, err) = p.communicate(value)
+
+		return out
 
 	def run(self, directory):
 
