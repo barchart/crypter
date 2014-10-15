@@ -101,7 +101,9 @@ openssl smime -decrypt -inform pem -inkey &gt;PRIVKEY&lt;
 #### Using the CLI client
 
 A command line client is provided for use within the container that
-provides a simple way to handle configuration decryption in shell scripts:
+provides a simple way to handle configuration decryption in shell scripts.
+It also reads `/etc/crypter/crypter.cfg` to find the default unix socket
+directory, or it can be specified on the command line with `-d`.
 
 ```
 echo "MIIBeQYJKoZIhvcNAQcDoIIBajCCAWYCAQAxggEhMIIBHQIBADAFMAACAQEwDQYJ
