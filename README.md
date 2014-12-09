@@ -91,11 +91,11 @@ Behind the scenes, data is encrypted by OpenSSL via the following commands
 (data is piped via STDIN):
 
 ```
-openssl smime -encrypt -outform pem -aes256 &gt;PUBKEY&lt;
+openssl smime -encrypt -outform pem -aes256 <PUBKEY>
 ```
 
 ```
-openssl smime -decrypt -inform pem -inkey &gt;PRIVKEY&lt;
+openssl smime -decrypt -inform pem -inkey <PRIVKEY>
 ```
 
 #### Using the CLI client
